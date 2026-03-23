@@ -534,6 +534,24 @@ DCL is an open specification. Feedback, proposals, and pull requests are welcome
 
 ---
 
+## Pricing
+
+DataClawe uses a two-axis pricing model that scales from individual developers to enterprise.
+
+| Item | Unit Price | Minimum |
+|------|-----------|---------|
+| Storage fee | $0.001 / record / month | $10/month |
+| Session fee | $0.001 / session | $10/month |
+| **Monthly minimum** | | **$20/month** |
+
+**Record size limit: 100KB per record.**
+This covers IoT sensor data, CRM contacts, medical text records, WordPress posts, and financial transactions.
+Images and video files are out of scope — store them in CDN/object storage and keep the URL in DataClawe.
+
+Enterprise customers (high-volume storage or high-traffic sessions) are handled via custom contracts.
+
+---
+
 ## Background
 
 DCL is developed as part of the [DataClawe](https://dataclawe.com) project.
