@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.dataclawe/dataclawe-mcp",
   "title": "DataClawe — Database as a Utility",
-  "description": "DataClawe is an AI-native database utility. Talk to your database in plain language. No SQL, no setup, no server management. Connect AI agents (Claude, GPT, Cursor) directly to MySQL or PostgreSQL via DCL (DataClawe Command Language) — a simple JSON-based database standard. SELECT, INSERT, UPDATE, DELETE, and more, just by describing what you need. From $20/month.",
+  "description": "AI-native database utility. Talk to your DB in plain language. No SQL. MySQL & PostgreSQL.",
   "version": "1.1.0",
   "repository": {
     "url": "https://github.com/DataClawe/dcl-spec",
