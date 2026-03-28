@@ -119,6 +119,7 @@ Standard covers most real-world needs. Advanced covers the rest. You never pay t
 | `INSERT` | Create a new record | ❌ |
 | `UPDATE` | Update existing records | ❌ |
 | `DELETE` | Logical delete (status flag) | ❌ |
+| `TABLE_CREATE` | Create a new table (empty declaration) | ❌ |
 | `TABLE_COPY` | Copy a table | ❌ |
 | `TABLE_RENAME` | Rename a table | ❌ |
 | `TABLE_DROP` | Logical delete a table | ❌ |
@@ -278,6 +279,78 @@ WHERE is an array of condition strings. Multiple conditions are AND by default.
   "action": "TABLES"
 }
 ```
+
+---
+
+## TABLE_CREATE — Create a table
+
+Declares a new empty table. Internally creates a single `status=8` schema declaration row.
+
+```json
+{
+  "dcl": "1.0",
+  "action": "TABLE_CREATE",
+  "table": "users"
+}
+```
+
+With optional schema definition:
+
+```json
+{
+  "dcl": "1.0",
+  "action": "TABLE_CREATE",
+  "table": "users",
+  "schema": {
+    "name":  "text",
+    "age":   "integer",
+    "email": "text"
+  }
+}
+```
+
+> **Without schema:** Created with `schema: null`. Column types are auto-registered as `text` on first INSERT.
+
+---
+
+## status=8 Schema Declaration Row
+
+DataClawe maintains one `status=8` declaration row per table.
+
+| status value | Purpose |
+|---|---|
+| `status=1` | Normal record (active) |
+| `status=8` | Table declaration + schema cache |
+| `status=9` | Logically deleted |
+
+**Example status=8 row content:**
+
+```json
+{
+  "schema": {
+    "name":  "text",
+    "age":   "text",
+    "email": "text"
+  }
+}
+```
+
+**Auto Schema Evolution:**
+
+Writing to a non-existent table via INSERT auto-creates the status=8 row.
+New columns are automatically appended to the status=8 schema on each INSERT (type defaults to `text`).
+
+```
+First INSERT: {"name": "kimura", "age": 25}
+  → Auto-create status=8: {"name":"text", "age":"text"}
+  → INSERT the record
+
+Second INSERT: {"name": "suzuki", "phone": "090-xxxx"}
+  → "phone" is new → auto-append to status=8 schema
+  → schema: {"name":"text", "age":"text", "phone":"text"}
+```
+
+When connecting to legacy MySQL/PostgreSQL, actual column types (`VARCHAR(255)`, `INT`, etc.) are recorded in the status=8 row.
 
 ---
 

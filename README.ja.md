@@ -119,6 +119,7 @@ DCLは3つのルールに従っています：
 | `INSERT` | 新しいレコードを作成 | ❌ |
 | `UPDATE` | 既存のレコードを更新 | ❌ |
 | `DELETE` | レコードを論理削除（ステータスフラグで管理） | ❌ |
+| `TABLE_CREATE` | テーブルを新規作成する（空テーブル宣言） | ❌ |
 | `TABLE_COPY` | テーブルをコピーする | ❌ |
 | `TABLE_RENAME` | テーブル名を変更する | ❌ |
 | `TABLE_DROP` | テーブルを論理削除する | ❌ |
@@ -278,6 +279,78 @@ WHEREは条件文字列の配列です。複数の条件はデフォルトでAND
   "action": "TABLES"
 }
 ```
+
+---
+
+## TABLE_CREATE — テーブルの作成
+
+空のテーブルを宣言します。内部的に `status=8` のスキーマ宣言行を1件作成します。
+
+```json
+{
+  "dcl": "1.0",
+  "action": "TABLE_CREATE",
+  "table": "users"
+}
+```
+
+スキーマを事前に定義する場合（オプション）：
+
+```json
+{
+  "dcl": "1.0",
+  "action": "TABLE_CREATE",
+  "table": "users",
+  "schema": {
+    "name":  "text",
+    "age":   "integer",
+    "email": "text"
+  }
+}
+```
+
+> **スキーマ未指定の場合：** `schema: null` で作成されます。初回INSERT时に自動的にカラム型が `text` で登録されます。
+
+---
+
+## status=8 スキーマ宣言行の設計
+
+DataClaweは各テーブルに `status=8` の宣言行を1件保持します。
+
+| status値 | 用途 |
+|---|---|
+| `status=1` | 通常レコード（アクティブ） |
+| `status=8` | テーブル宣言行 ＋ スキーマキャッシュ |
+| `status=9` | 論理削除済み |
+
+**status=8行の内容例：**
+
+```json
+{
+  "schema": {
+    "name":  "text",
+    "age":   "text",
+    "email": "text"
+  }
+}
+```
+
+**スキーマ自動進化（Auto Schema Evolution）：**
+
+INSERTで存在しないテーブルへ書き込むと、status=8行が自動作成されます。
+新しいカラムが追加されるたびにstatus=8行のschemaも自動追記されます（型は `text`）。
+
+```
+初回INSERT: {"name": "kimura", "age": 25}
+  → status=8行を自動作成: {"name":"text", "age":"text"}
+  → レコードをINSERT
+
+2回目INSERT: {"name": "suzuki", "phone": "090-xxxx"}
+  → "phone"が新カラム → status=8行に自動追記
+  → schema: {"name":"text", "age":"text", "phone":"text"}
+```
+
+レガシーMySQL/PostgreSQL接続時は、実際のカラム型（`VARCHAR(255)`・`INT`等）がstatus=8行に記録されます。
 
 ---
 
