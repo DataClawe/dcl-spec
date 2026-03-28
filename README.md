@@ -107,16 +107,21 @@ Standard covers most real-world needs. Advanced covers the rest. You never pay t
 
 ## Actions
 
-| Action   | Description                        |
-|----------|------------------------------------|
-| `SELECT` | Fetch one or more records          |
-| `INSERT` | Create a new record                |
-| `UPDATE` | Update existing records            |
-| `DELETE` | Logical delete (status flag)       |
-| `COUNT`  | Count matching records             |
-| `EXISTS` | Check if a record exists           |
-| `SCHEMA` | Get column definitions for a table |
-| `TABLES` | List all available tables          |
+| Action | Description | Read-only |
+|--------|-------------|-----------|
+| `SELECT` | Fetch one or more records | ✅ |
+| `COUNT` | Count matching records | ✅ |
+| `EXISTS` | Check if a record exists | ✅ |
+| `SCHEMA` | Get column definitions for a table | ✅ |
+| `TABLES` | List all available tables | ✅ |
+| `STATS` | Get record count, last updated, and storage size | ✅ |
+| `TIMELINE` | Get chronological change history of a record | ✅ |
+| `INSERT` | Create a new record | ❌ |
+| `UPDATE` | Update existing records | ❌ |
+| `DELETE` | Logical delete (status flag) | ❌ |
+| `TABLE_COPY` | Copy a table | ❌ |
+| `TABLE_RENAME` | Rename a table | ❌ |
+| `TABLE_DROP` | Logical delete a table | ❌ |
 
 ---
 
@@ -276,6 +281,98 @@ WHERE is an array of condition strings. Multiple conditions are AND by default.
 
 ---
 
+## STATS — Table statistics
+
+Returns record count, last updated timestamp, and storage size. Useful for AI agents to assess table state before operating.
+
+```json
+{
+  "dcl": "1.0",
+  "action": "STATS",
+  "table": "users"
+}
+```
+
+Example response:
+
+```json
+{
+  "dcl": "1.0",
+  "status": "OK",
+  "data": {
+    "table": "users",
+    "record_count": 1024,
+    "last_updated": "2026-03-28T10:00:00Z",
+    "size_kb": 512
+  }
+}
+```
+
+---
+
+## TIMELINE — Record change history
+
+Returns the change history (created, updated, logical delete) of a record in chronological order. Useful for AI agents tracking data evolution.
+
+```json
+{
+  "dcl": "1.0",
+  "action": "TIMELINE",
+  "table": "users",
+  "where": [
+    "id = 123"
+  ]
+}
+```
+
+---
+
+## TABLE_COPY — Copy a table
+
+Copies a table under a new name. Used for backups, migrations, and testing.
+
+```json
+{
+  "dcl": "1.0",
+  "action": "TABLE_COPY",
+  "table": "users",
+  "target_table": "users_backup_20260328"
+}
+```
+
+---
+
+## TABLE_RENAME — Rename a table
+
+Renames a table.
+
+```json
+{
+  "dcl": "1.0",
+  "action": "TABLE_RENAME",
+  "table": "users_old",
+  "new_name": "users_archived"
+}
+```
+
+---
+
+## TABLE_DROP — Drop a table (logical delete)
+
+Logically deletes a table. Data is not physically removed immediately.
+
+```json
+{
+  "dcl": "1.0",
+  "action": "TABLE_DROP",
+  "table": "users_temp"
+}
+```
+
+> **Note:** TABLE_DROP is a logical delete — not equivalent to SQL `DROP TABLE`. Data is not immediately destroyed.
+
+---
+
 ## Response Format
 
 ### Success
@@ -308,14 +405,14 @@ WHERE is an array of condition strings. Multiple conditions are AND by default.
 
 ### Error codes
 
-| Code                  | Description                        |
-|-----------------------|------------------------------------|
-| `TABLE_NOT_FOUND`     | Specified table does not exist     |
-| `COLUMN_NOT_FOUND`    | Specified column does not exist    |
-| `INVALID_ACTION`      | Unknown action specified           |
-| `INVALID_WHERE`       | WHERE condition could not be parsed|
-| `PERMISSION_DENIED`   | Tenant does not have access        |
-| `CONNECTION_ERROR`    | Database connection failed         |
+| Code | Description |
+|------|-------------|
+| `TABLE_NOT_FOUND` | Specified table does not exist |
+| `COLUMN_NOT_FOUND` | Specified column does not exist |
+| `INVALID_ACTION` | Unknown action specified |
+| `INVALID_WHERE` | WHERE condition could not be parsed |
+| `PERMISSION_DENIED` | Tenant does not have access |
+| `CONNECTION_ERROR` | Database connection failed |
 
 ---
 
@@ -326,9 +423,7 @@ DCL works over two protocols. The DCL command itself is identical in both cases.
 | Protocol | Used by | Guide |
 |----------|---------|-------|
 | REST API (HTTPS POST) | Frontend, Backend, any HTTP client | See [README.api.md](README.api.md) |
-| MCP (JSON-RPC 2.0) | AI agents (Claude, GPT, Cursor) | See [README.mcp.md](README.mcp.md) |
-
-> **Note:** Integration endpoints are under development. The specifications below describe the intended behavior.
+| MCP (JSON-RPC 2.0 / SSE) | AI agents (Claude, GPT, Cursor) | See [README.mcp.md](README.mcp.md) |
 
 ### DCL payload (identical in both protocols)
 
@@ -352,11 +447,11 @@ This DCL JSON is the same regardless of whether you call via REST API or MCP. On
 
 ## Supported Databases
 
-| Database         | Status        |
-|------------------|---------------|
-| MySQL 5.x / 8.x  | ✅ Supported  |
-| PostgreSQL 9–18  | ✅ Supported  |
-| Others           | 📋 Planned    |
+| Database | Status |
+|----------|--------|
+| MySQL 5.x / 8.x | ✅ Supported |
+| PostgreSQL 9–18 | ✅ Supported |
+| Others | 📋 Planned |
 
 DCL normalizes differences between MySQL and PostgreSQL. You write one DCL command. DataClawe handles the rest.
 
@@ -457,11 +552,11 @@ Same JSON structure. Same DataClawe engine. More capability when you need it.
 
 **JOIN types supported in Advanced**
 
-| Type    | Description                        |
-|---------|------------------------------------|
-| `INNER` | Records matching in both tables    |
-| `LEFT`  | All left, matching right           |
-| `RIGHT` | All right, matching left           |
+| Type | Description |
+|------|-------------|
+| `INNER` | Records matching in both tables |
+| `LEFT` | All left, matching right |
+| `RIGHT` | All right, matching left |
 
 ---
 
@@ -487,7 +582,9 @@ The following are out of scope in both Standard and Advanced, to keep DCL safe a
 - Stored procedures
 - Schema creation or `ALTER TABLE`
 - Raw SQL passthrough
-- `DROP` or destructive schema operations
+- Physical schema destruction (immediate `DROP TABLE` equivalent)
+
+> **Note:** `TABLE_DROP` in DCL is a **logical delete** — distinct from SQL `DROP TABLE`. It does not immediately destroy data.
 
 DCL is a data operation language, not a schema management language.
 
@@ -536,19 +633,29 @@ DCL is an open specification. Feedback, proposals, and pull requests are welcome
 
 ## Pricing
 
-DataClawe uses a two-axis pricing model that scales from individual developers to enterprise.
+DataClawe uses a tiered pricing model that scales from individual developers to enterprise.
 
-| Item | Unit Price | Minimum |
-|------|-----------|---------|
-| Storage fee | $0.001 / record / month | $10/month |
-| Session fee | $0.001 / session | $10/month |
-| **Monthly minimum** | | **$20/month** |
+**Initial registration fee: $20 (one-time, all plans)**
+
+| Plan | Monthly | Records | Sessions | SLA |
+|------|---------|---------|----------|-----|
+| **Free** | $0 | 2,000 | 100/day | No |
+| **Personal** | $20 | up to 20,000 | up to 20,000/month | No |
+| **Business** | $20+ | Unlimited | Unlimited | No |
+| **Enterprise** | Contact us | Unlimited | Unlimited | Yes |
+
+**Usage rates (Business plan — overage)**
+
+| Item | Unit price |
+|------|-----------|
+| Record storage | $0.001 / record / month |
+| Session | $0.001 / session |
 
 **Record size limit: 100KB per record.**
 This covers IoT sensor data, CRM contacts, medical text records, WordPress posts, and financial transactions.
 Images and video files are out of scope — store them in CDN/object storage and keep the URL in DataClawe.
 
-Enterprise customers (high-volume storage or high-traffic sessions) are handled via custom contracts.
+For Enterprise pricing, contact us at [dataclawe.com/enterprise](https://dataclawe.com/enterprise).
 
 ---
 
@@ -572,4 +679,4 @@ You are free to implement, extend, and build upon this specification. Attributio
 
 ---
 
-*DCL v1.0 — 2026 — DataClawe Project*
+*DCL v1.1 — 2026 — DataClawe Project*
