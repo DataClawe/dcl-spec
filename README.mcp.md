@@ -82,7 +82,7 @@ Register DataClawe as an MCP tool using the following definition:
 ```json
 {
   "name": "dataclawe",
-  "description": "Interact with MySQL or PostgreSQL databases using DCL JSON commands. Supports SELECT, INSERT, UPDATE, DELETE, COUNT, EXISTS, SCHEMA, TABLES, STATS, TIMELINE, TABLE_COPY, TABLE_RENAME, and TABLE_DROP actions.",
+  "description": "Interact with MySQL or PostgreSQL databases using DCL JSON commands. Supports SELECT, INSERT, UPDATE, DELETE, COUNT, EXISTS, SCHEMA, TABLES, STATS, TIMELINE, TABLE_CREATE, TABLE_COPY, TABLE_RENAME, TABLE_DROP, DB_CREATE, DB_RENAME, DB_DROP, and DB_LIST actions.",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -97,7 +97,8 @@ Register DataClawe as an MCP tool using the following definition:
           "SELECT", "INSERT", "UPDATE", "DELETE",
           "COUNT", "EXISTS", "SCHEMA", "TABLES",
           "STATS", "TIMELINE",
-          "TABLE_COPY", "TABLE_RENAME", "TABLE_DROP"
+          "TABLE_CREATE", "TABLE_COPY", "TABLE_RENAME", "TABLE_DROP",
+          "DB_CREATE", "DB_RENAME", "DB_DROP", "DB_LIST"
         ],
         "description": "The database operation to perform."
       },
@@ -379,6 +380,27 @@ Returns the change history (created, updated, deleted) of a record in chronologi
 }
 ```
 
+### TABLE_CREATE — Create an empty table
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "tools/call",
+  "params": {
+    "name": "dataclawe",
+    "arguments": {
+      "dcl": "1.0",
+      "action": "TABLE_CREATE",
+      "db_name": "mydb",
+      "table": "products"
+    }
+  }
+}
+```
+
+> **Note:** Tables are also auto-created on first INSERT. Use TABLE_CREATE when you want to pre-declare a table before inserting data.
+
 ### TABLE_COPY — Copy a table
 
 ```json
@@ -436,6 +458,92 @@ Returns the change history (created, updated, deleted) of a record in chronologi
 ```
 
 > **Note:** TABLE_DROP is a soft delete. Tables are not physically removed immediately.
+
+### DB_CREATE — Create a logical database
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 14,
+  "method": "tools/call",
+  "params": {
+    "name": "dataclawe",
+    "arguments": {
+      "dcl": "1.0",
+      "action": "DB_CREATE",
+      "db_name": "production"
+    }
+  }
+}
+```
+
+> **Note:** Databases are also auto-created on first INSERT. Use DB_CREATE to explicitly register a database namespace.
+
+### DB_RENAME — Rename a logical database
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 15,
+  "method": "tools/call",
+  "params": {
+    "name": "dataclawe",
+    "arguments": {
+      "dcl": "1.0",
+      "action": "DB_RENAME",
+      "db_name": "staging",
+      "new_db_name": "production"
+    }
+  }
+}
+```
+
+### DB_DROP — Drop a logical database (all tables and records)
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 16,
+  "method": "tools/call",
+  "params": {
+    "name": "dataclawe",
+    "arguments": {
+      "dcl": "1.0",
+      "action": "DB_DROP",
+      "db_name": "old_project"
+    }
+  }
+}
+```
+
+> **Warning:** DB_DROP permanently deletes all tables and records in the specified database. This operation cannot be undone.
+
+### DB_LIST — List all logical databases
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 17,
+  "method": "tools/call",
+  "params": {
+    "name": "dataclawe",
+    "arguments": {
+      "dcl": "1.0",
+      "action": "DB_LIST"
+    }
+  }
+}
+```
+
+Example response:
+```json
+{
+  "dcl": "1.0",
+  "status": "OK",
+  "databases": ["production", "staging", "test"],
+  "count": 3
+}
+```
 
 ---
 
@@ -541,10 +649,11 @@ When using DataClawe in an AI agent, include the following context in your syste
 The DataClawe database tool is available.
 
 When exploring a database, follow this order:
-1. TABLES action — list available tables
-2. SCHEMA action — inspect the structure of a specific table
-3. STATS action — check record count and last updated timestamp
-4. Then use SELECT, INSERT, UPDATE, DELETE as needed
+1. DB_LIST action — list available databases
+2. TABLES action — list tables in the target database
+3. SCHEMA action — inspect the structure of a specific table
+4. STATS action — check record count and last updated timestamp
+5. Then use SELECT, INSERT, UPDATE, DELETE as needed
 
 Always check the table structure before writing data.
 DELETE and TABLE_DROP are soft deletes — records are managed by status flags, not physically removed.
@@ -567,9 +676,14 @@ Use TIMELINE to inspect the change history of a record.
 | INSERT | Add records | ❌ |
 | UPDATE | Modify records | ❌ |
 | DELETE | Soft-delete records | ❌ |
+| TABLE_CREATE | Create an empty table | ❌ |
 | TABLE_COPY | Copy a table | ❌ |
 | TABLE_RENAME | Rename a table | ❌ |
 | TABLE_DROP | Soft-delete a table | ❌ |
+| DB_CREATE | Create a logical database | ❌ |
+| DB_RENAME | Rename a logical database | ❌ |
+| DB_DROP | Drop a logical database (all tables included) | ❌ |
+| DB_LIST | List all logical databases | ✅ |
 
 ---
 
@@ -604,4 +718,4 @@ The DCL payload itself (`dcl`, `action`, `table`, `where`, etc.) is **identical 
 
 ---
 
-*DCL MCP Integration Guide — v1.1 — 2026 — DataClawe Project*
+*DCL MCP Integration Guide — v1.2 — 2026 — DataClawe Project*
