@@ -14,7 +14,7 @@ DataClawe DCL (DataClawe Command Language) is designed as the standard specifica
 - Simple, readable JSON structure
 - Schema-free — insert any data without pre-defining columns
 - AI-safety by design — soft deletes, auto-schema evolution
-- PostgreSQL backend with JSONB storage
+- Managed cloud storage — no database setup required
 - CC BY 4.0 License — free to implement, extend, and adopt
 
 This guide is for **AI agent developers integrating DataClawe as an MCP tool** (Claude, GPT, Cursor, and other MCP-compatible hosts).
@@ -35,7 +35,7 @@ The MCP server exposes **18 individual tools** — each corresponding to a speci
 AI Agent
   → JSON-RPC 2.0 (SSE)
     → DataClawe MCP Server (18 tools)
-      → PostgreSQL (JSONB)
+      → DataClawe Storage Engine
 ```
 
 ---
@@ -61,7 +61,7 @@ DataClawe uses a two-level namespace: **database** → **table** → **records**
 - **table_id**: A unique integer ID for each record (returned as `_id` in query results)
 - **data**: Record fields stored as schema-free JSON (any keys accepted)
 
-Records are stored as JSONB in PostgreSQL. No schema definition is required — columns are auto-detected on first insert.
+Records are stored as schema-free JSON. No schema definition is required — columns are auto-detected on first insert.
 
 ### Status Values
 
